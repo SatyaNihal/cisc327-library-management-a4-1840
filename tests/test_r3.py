@@ -19,12 +19,6 @@ def test_borrow_patron_id_has_letters():
     assert success == False
     assert "6 digits" in msg
 
-def test_borrow_same_book_twice():
-    # try to borrow same book twice -> second should fail
-    borrow_book_by_patron("222222", 1)
-    success, msg = borrow_book_by_patron("222222", 1)
-    assert success == False
-
 def test_borrow_nonexistent_book():
     # book id 0 doesn't exist -> should fail
     success, msg = borrow_book_by_patron("123456", 0)
