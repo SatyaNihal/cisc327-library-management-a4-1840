@@ -285,3 +285,43 @@ def get_patron_status_report(patron_id: str) -> Dict:
         'total_late_fees': round(total_late_fees, 2),
         'borrowing_history': borrowing_history
     }
+
+from services.payment_service import PaymentGateway
+
+def pay_late_fees(patron_id: str, book_id: int, payment_gateway: PaymentGateway):
+    if not patron_id or not patron_id.isdigit() or len(patron_id) != 6:
+        return False, "Invalid patron ID"
+    book = get_book_by_id(book_id)
+    if not book:
+        return False, "Book not found"
+    r = calculate_late_fee_for_book(patron_id, book_id)
+    fee = float(r.get("fee_amount", 0))
+    days = int(r.get("days_overdue", 0))
+    if r.get("status") in {"Book not found.", "No active borrowing record found."}:
+        return False, r.get("status")
+    if fee <= 0:
+        return True, "No late fees"
+    try:
+        resp = payment_gateway.process_payment(patron_id, fee)
+    except Exception as e:
+        return False, f"Payment exception: {e}"
+    if not resp or resp.get("status") != "success":
+        return False, (resp.get("reason") if isinstance(resp, dict) else "Payment failed")
+    return True, {"transaction_id": resp["transaction_id"], "charged": round(fee, 2), "days_overdue": days}
+
+def refund_late_fee_payment(transaction_id: str, amount: float, payment_gateway: PaymentGateway):
+    if not transaction_id or not isinstance(transaction_id, str):
+        return False, "Invalid transaction"
+    try:
+        amt = float(amount)
+    except Exception:
+        return False, "Invalid amount"
+    if amt <= 0 or amt > 15.0:
+        return False, "Amount must be >0 and ≤15"
+    try:
+        resp = payment_gateway.refund_payment(transaction_id, amt)
+    except Exception as e:
+        return False, f"Refund exception: {e}"
+    if not resp or resp.get("status") != "refunded":
+        return False, (resp.get("reason") if isinstance(resp, dict) else "Refund failed")
+    return True, {"refund_id": resp["refund_id"], "refunded": round(amt, 2)}
