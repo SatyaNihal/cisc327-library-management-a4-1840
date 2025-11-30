@@ -27,6 +27,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest flask pytest-mock coverage
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install playwright
+          python -m playwright install chromium
 
       - name: Initialize database via app.py
         run: python -c "import app; app.create_app()"
