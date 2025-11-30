@@ -9,8 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest] # ubuntu is fastest & well-supported
-        python-version: ["3.12"] # you can add more versions if you want
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
 
     name: Run Pytest on ${{ matrix.os }} with Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -25,9 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # install everything your app/tests need
           pip install -r requirements.txt
-          # install Playwright browsers (Chromium is enough for your tests)
           python -m playwright install --with-deps chromium
 
       - name: Initialize database via app.py
